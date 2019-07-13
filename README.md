@@ -22,13 +22,14 @@ pub fn return_3() -> i32 {
 }
 ```
 
-First, we'll need to prepare it to be used outside of Rust. The Rust Compiler
-will rename functions, and also make them incompatible with non-rust languages
-by default in order to be able to perform various kinds of optimisations. It
+First, we'll need to prepare it to be used outside of Rust. By default the Rust
+Compiler will rename functions, and also make them incompatible with non-rust
+languages in order to be able to perform various kinds of optimisations. It
 makes a lot sense that the default is optimised for pure rust, but that's not
 what we're doing today.
 
 So, I'll rewrite my function like this:
+
 ```rust
 #[no_mangle]
 pub extern fn return_3() -> i32 {
@@ -37,11 +38,11 @@ pub extern fn return_3() -> i32 {
 ```
 
 `#[no_mangle]` means that the name is preserved for calling in c (or really any
-language that can link to a static library), `extern` means that it'll be
-exported for use from whatever we compile.
+language that can load functions from a native library), `extern` means that
+it'll be exported for use from whatever we compile.
 
 Now we'll need to modify our `Cargo.toml` to allow us to build a static library,
-that we can compile in to our ruby extension eventually:
+that we can compile in to our Ruby extension eventually:
 
 ```
 [package]
@@ -85,9 +86,9 @@ VALUE foo_rb_return_3(VALUE klass) {
 ```
 
 This block of C includes `ruby.h`, a C header file that gives us various
-functions to work with the ruby interpreter, and `stdint.h`, which declares
+functions to work with the Ruby interpreter, and `stdint.h`, which declares
 fixed width integer types (in this case we need `int32_t`, because we declared
-our function to be an `i32` in rust. It then declares that `return_3` is a
+our function to be an `i32` in Rust). It then declares that `return_3` is a
 function from outside of the C file (because it's declared in Rust). Then it
 declares the function `foo_rb_return_3`, which calls `return_3`, and then wraps
 it in the `LONG2FIX` macro. This macro comes from `ruby.h` and converts a C
@@ -124,13 +125,12 @@ We've made a few changes here. Firstly, we've defined a new variable:
 `VALUE foo_rb_module_foo = Qnil`. This is essentially declaring that we have a
 new Ruby object called `foo_rb_module_foo`. When `Init_foo` is called, we call
 `foo_rb_module_foo = rb_define_module("Foo");`. This will declare in Ruby a
-module called `Foo` that we can hang all of our c functions off.
+module called `Foo` that we can hang all of our C functions off.
 
 Then, we put our Ruby-ified `foo_rb_return_3` in our module with
-`rb_define_module_function(foo_rb_module_foo, "return_3", foo_rb_return_3, 0)`
-
+`rb_define_module_function(foo_rb_module_foo, "return_3", foo_rb_return_3, 0)`.
 `rb_define_module_function` is the underlying C function that is equivalent to
-the `module_function` keyword in Ruby. The first argument is module we want to
+the `module_function` method in Ruby. The first argument is module we want to
 define that function on (in this case `Foo`, which is `foo_rb_module_foo` in C).
 Then we give it a C string, which is the name of the function in Ruby
 (`return_3`), then the C function to call (`foo_rb_return_3`) then the number of
@@ -146,7 +146,7 @@ Now that we've got our Rust and Ruby modules set up, we need to build
 everything. Building the rust piece is easy, we can just run `cargo build`.
 That'll create the `libfoo.a` we referenced earlier.
 
-However, the Ruby-c-rust bit is a little bit more involved. Linking c code
+However, the Ruby-C-Rust bit is a little bit more involved. Linking C code
 against the Ruby interpreter isn't as easy as just calling `clang` and expecting
 everything to work. But fortunately, Ruby provides a convenient tool for us,
 called "mkmf" (Makemakefile for long). To use it, we write a Ruby file called
@@ -168,8 +168,8 @@ The only line of this file that is doing anything particularly interesting is
 `$LDFLAGS << " -Ltarget/debug -lfoo "`. This line basically tells the Ruby
 extension compiler where to find the Rust extension we created earlier.
 
-`create_makefile("foo")` creates a `Makefile` that'll compile all the c files in
-the current directory, expecting to find an `Init_foo` function. `Makefiles` are
+`create_makefile("foo")` creates a `Makefile` that'll compile all the C files in
+the current directory, expecting to find an `Init_foo` function. `Makefile`s are
 somewhat complex scripts for compiling C programs that have a varied set of
 dependencies.
 
