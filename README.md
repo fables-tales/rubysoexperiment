@@ -6,6 +6,11 @@ speaking, it turns out that cleaning up a very large Ruby parse tree (e.g. 4000
 lines) can be slow because of the number of comparisons that have to be made.
 Rust can do this a lot faster.
 
+If you want to try this project yourself, run `./build.sh`, it assumes you
+have a recent Rust and Ruby installed, but it'll compile the rust bit, the ruby
+bit, and then run a simple ruby program loading the native extension. Below is
+a blog post on how it works.
+
 ## Starting with Rust
 
 To start with, let's imagine that I've got this rust function that I want to
@@ -40,7 +45,7 @@ that we can compile in to our ruby extension eventually:
 
 ```
 [package]
-name = "rubysoexperimenbt"
+name = "rubysoexperiment"
 version = "0.1.0"
 authors = ["Sam Phippen <samphippen@googlemail.com>"]
 edition = "2018"
